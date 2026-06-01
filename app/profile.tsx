@@ -1,17 +1,404 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Button, Image, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { useState } from 'react';
+import { useRouter } from 'expo-router';
+import { searchUserByLogin, getUserById, getUserSkills, getUserProjects, type User, type Skill, type ProjectUser } from '../services/api';
 
 export default function ProfileScreen() {
+  const router = useRouter();
+  const [login, setLogin] = useState('');
+  const [user, setUser] = useState<User | null>(null);
+  const [skills, setSkills] = useState<Skill[]>([]);
+  const [projects, setProjects] = useState<ProjectUser[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [projectFilter, setProjectFilter] = useState<'all' | 'finished' | 'failed'>('all');
+
+  const handleSearch = async () => {
+    if (!login.trim()) {
+      setError('Введи логин');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setUser(null);
+    setSkills([]);
+    setProjects([]);
+
+    try {
+      const foundUser = await searchUserByLogin(login.trim().toLowerCase());
+      if (!foundUser) {
+        setError('Пользователь не найден');
+        setLoading(false);
+        return;
+      }
+
+      // Fetch sequentially to avoid 429 rate limit errors
+      const fullUser = await getUserById(foundUser.id);
+      setUser(fullUser);
+
+      // const userSkills = await getUserSkills(foundUser.id);
+      // setSkills(userSkills);
+
+      // const userProjects = await getUserProjects(foundUser.id);
+      // setProjects(userProjects);
+    } catch (err: any) {
+      const errorMsg = err?.message || 'Ошибка при поиске';
+      setError(errorMsg);
+      console.error('Full error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredProjects = projects.filter((p) => {
+    if (projectFilter === 'all') return true;
+    return p.status === projectFilter;
+  });
+
   return (
-    <View style={styles.container}>
-      <Text>Screen 2 - Student Profile</Text>
-    </View>
+    <ScrollView style={styles.container}>
+      {/* Search Section */}
+      <View style={styles.searchSection}>
+        <TextInput
+          style={styles.input}
+          placeholder="Введи логин пользователя"
+          value={login}
+          onChangeText={setLogin}
+          editable={!loading}
+        />
+        <Button title="Поиск" onPress={handleSearch} disabled={loading} />
+      </View>
+
+      {loading && <ActivityIndicator size="large" color="#0000ff" style={styles.loader} />}
+
+      {error && <Text style={styles.error}>{error}</Text>}
+
+      {user && (
+        <>
+          {/* Profile Header */}
+          <View style={styles.header}>
+            {user.image?.link && <Image source={{ uri: user.image.link }} style={styles.avatar} />}
+            <Text style={styles.username}>{user.login}</Text>
+            <Text style={styles.name}>{user.first_name} {user.last_name}</Text>
+            <View style={styles.levelBadge}>
+              <Text style={styles.levelText}>Level: {user.level.toFixed(2)}</Text>
+            </View>
+            {user.cursus && <Text style={styles.cursus}>{user.cursus}</Text>}
+          </View>
+
+          {/* Contact Info */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Контактная информация</Text>
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Email:</Text>
+              <Text style={styles.value}>{user.email}</Text>
+            </View>
+            {user.phone && (
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>Phone:</Text>
+                <Text style={styles.value}>{user.phone}</Text>
+              </View>
+            )}
+            {user.mobile && (
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>Mobile:</Text>
+                <Text style={styles.value}>{user.mobile}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Resources */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Ресурсы</Text>
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Wallet:</Text>
+              <Text style={styles.value}>{user.wallet} pts</Text>
+            </View>
+            {user.location && (
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>Локация:</Text>
+                <Text style={styles.value}>{user.location}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Skills
+          {skills.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Навыки</Text>
+              {skills.map((skill) => (
+                <View key={skill.id} style={styles.skillItem}>
+                  <View style={styles.skillHeader}>
+                    <Text style={styles.skillName}>{skill.name}</Text>
+                    <Text style={styles.skillLevel}>Lvl: {skill.level}</Text>
+                  </View>
+                  <View style={styles.progressBarContainer}>
+                    <View
+                      style={[
+                        styles.progressBar,
+                        { width: `${skill.percentage}%` },
+                      ]}
+                    />
+                  </View>
+                  <Text style={styles.percentage}>{skill.percentage}%</Text>
+                </View>
+              ))}
+            </View>
+          )} */}
+
+          {/* Projects
+          {projects.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Проекты</Text>
+              <View style={styles.filterButtons}>
+                {(['all', 'finished', 'failed'] as const).map((filter) => (
+                  <TouchableOpacity
+                    key={filter}
+                    style={[
+                      styles.filterButton,
+                      projectFilter === filter && styles.filterButtonActive,
+                    ]}
+                    onPress={() => setProjectFilter(filter)}
+                  >
+                    <Text
+                      style={[
+                        styles.filterButtonText,
+                        projectFilter === filter && styles.filterButtonTextActive,
+                      ]}
+                    >
+                      {filter === 'all' ? 'Все' : filter === 'finished' ? 'Завершено' : 'Не прошли'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              {filteredProjects.length > 0 ? (
+                filteredProjects.map((project) => (
+                  <View key={project.id} style={styles.projectItem}>
+                    <Text style={styles.projectName}>{project.project.name}</Text>
+                    <View style={styles.projectInfo}>
+                      <Text
+                        style={[
+                          styles.projectStatus,
+                          project.status === 'finished'
+                            ? styles.statusFinished
+                            : styles.statusFailed,
+                        ]}
+                      >
+                        {project.status === 'finished' ? '✓ Завершено' : '✗ Не прошло'}
+                      </Text>
+                      {project.final_mark !== null && (
+                        <Text style={styles.projectMark}>Mark: {project.final_mark}</Text>
+                      )}
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.emptyText}>Нет проектов в этой категории</Text>
+              )}
+            </View>
+          )} */}
+
+          {/* Back Button */}
+          <View style={styles.backButtonContainer}>
+            <Button title="← Назад к поиску" onPress={() => router.back()} />
+          </View>
+        </>
+      )}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff',
+  },
+  searchSection: {
+    padding: 16,
+    backgroundColor: '#f9f9f9',
+    gap: 10,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    padding: 12,
+    borderRadius: 8,
+    fontSize: 16,
+  },
+  loader: {
+    marginTop: 20,
+  },
+  error: {
+    color: 'red',
+    marginTop: 10,
+    textAlign: 'center',
+    paddingHorizontal: 16,
+  },
+  header: {
     alignItems: 'center',
-    justifyContent: 'center',
+    padding: 20,
+    backgroundColor: '#f5f5f5',
+  },
+  avatar: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    marginBottom: 16,
+  },
+  username: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  name: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 12,
+  },
+  levelBadge: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  levelText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  cursus: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 4,
+  },
+  section: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+    color: '#333',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    paddingVertical: 6,
+  },
+  label: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+    flex: 1,
+  },
+  value: {
+    fontSize: 14,
+    color: '#333',
+    flex: 1,
+    textAlign: 'right',
+  },
+  skillItem: {
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  skillHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  skillName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  skillLevel: {
+    fontSize: 14,
+    color: '#666',
+  },
+  progressBarContainer: {
+    height: 8,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 4,
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#007AFF',
+    borderRadius: 4,
+  },
+  percentage: {
+    fontSize: 12,
+    color: '#999',
+    textAlign: 'right',
+  },
+  filterButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  filterButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    backgroundColor: '#fff',
+  },
+  filterButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  filterButtonText: {
+    fontSize: 13,
+    color: '#666',
+  },
+  filterButtonTextActive: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  projectItem: {
+    backgroundColor: '#f9f9f9',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  projectName: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 8,
+    color: '#333',
+  },
+  projectInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  projectStatus: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  statusFinished: {
+    color: '#34C759',
+  },
+  statusFailed: {
+    color: '#FF3B30',
+  },
+  projectMark: {
+    fontSize: 13,
+    color: '#666',
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: '#999',
+    paddingVertical: 16,
+  },
+  backButtonContainer: {
+    padding: 16,
+    marginBottom: 20,
   },
 });
