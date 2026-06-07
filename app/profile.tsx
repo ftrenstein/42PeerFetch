@@ -51,6 +51,15 @@ export default function ProfileScreen() {
     }
   };
 
+    const clearSearch = () => {
+    setLogin('');
+    setUser(null);
+    setSkills([]);
+    setProjects([]);
+    setError('');
+    setProjectFilter('all');
+  }
+
   const filteredProjects = projects.filter((p) => {
     if (projectFilter === 'all') return true;
     return p.status === projectFilter;
@@ -94,7 +103,7 @@ export default function ProfileScreen() {
               <Text style={styles.label}>Email:</Text>
               <Text style={styles.value}>{user.email}</Text>
             </View>
-            {user.phone && (
+            {user.phone && user.phone !== 'hidden' && (
               <View style={styles.infoRow}>
                 <Text style={styles.label}>Phone:</Text>
                 <Text style={styles.value}>{user.phone}</Text>
@@ -113,7 +122,7 @@ export default function ProfileScreen() {
             <Text style={styles.sectionTitle}>Ресурсы</Text>
             <View style={styles.infoRow}>
               <Text style={styles.label}>Wallet:</Text>
-              <Text style={styles.value}>{user.wallet} pts</Text>
+              <Text style={styles.value}>{user.wallet} points</Text>
             </View>
             {user.location && (
               <View style={styles.infoRow}>
@@ -123,7 +132,7 @@ export default function ProfileScreen() {
             )}
           </View>
 
-          {/* Skills
+          /* Skills */
           {skills.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Навыки</Text>
@@ -145,7 +154,7 @@ export default function ProfileScreen() {
                 </View>
               ))}
             </View>
-          )} */}
+          )}
 
           {/* Projects
           {projects.length > 0 && (
@@ -201,7 +210,9 @@ export default function ProfileScreen() {
 
           {/* Back Button */}
           <View style={styles.backButtonContainer}>
-            <Button title="← Назад к поиску" onPress={() => router.back()} />
+            <Button title="← Назад к поиску" onPress={() => clearSearch()} />
+            <Button title="Logout" onPress={() => router.back()} />
+
           </View>
         </>
       )}

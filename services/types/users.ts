@@ -70,11 +70,12 @@ export interface ProjectUser {
 
 // Transform API response to app model
 export function mapAPIUserToUser(apiUser: APIUser): User {
-  const primaryCursus = apiUser.cursus_users?.[0];
+  const cursusArray = apiUser.cursus_users || [];
+  const lastCursus = cursusArray[cursusArray.length - 1]; // Последний курс
 
   return {
     ...apiUser,
-    level: primaryCursus?.level || 0,
-    cursus: primaryCursus?.cursus?.name || 'Unknown',
+    level: lastCursus?.level || 0,
+    cursus: lastCursus?.cursus?.name || 'Unknown',
   };
 }

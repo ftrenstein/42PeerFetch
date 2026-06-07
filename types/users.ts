@@ -45,7 +45,6 @@ export interface CursusUser {
     created_at: string;
 }
 
-
 export interface Skill {
     id: number;
     name: string;

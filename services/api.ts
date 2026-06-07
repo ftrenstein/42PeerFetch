@@ -3,12 +3,15 @@ import { User, Skill, ProjectUser, APIUser, mapAPIUserToUser } from './types/use
 
 
 export async function searchUserByLogin(login: string): Promise<User | null> {
+  console.log('🚀 SEARCH STARTED FOR:', login);
   try {
     const token = await SecureStore.getItemAsync('access_token');
+    console.log('🔑 Token:', token ? 'Found' : 'NOT FOUND');
     if (!token) {
       throw new Error('Access token not found');
     }
 
+    console.log('📡 Fetching from API...');
     const response = await fetch(
       `https://api.intra.42.fr/v2/users?filter[login]=${login}`,
       {
@@ -18,14 +21,19 @@ export async function searchUserByLogin(login: string): Promise<User | null> {
       }
     );
 
+    console.log('📊 API Status:', response.status);
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
     }
 
-    const users: User[] = await response.json();
-    return users.length > 0 ? users[0] : null;
+    const users: APIUser[] = await response.json();
+    console.log('\n\n🔍 ======================== SEARCH USER ========================');
+    console.log('User found:', users[0]?.login);
+    console.log(JSON.stringify(users[0], null, 2));
+    console.log('================================================================\n\n');
+    return users.length > 0 ? mapAPIUserToUser(users[0]) : null;
   } catch (error) {
-    console.error('Error searching user:', error);
+    console.error('❌ Error searching user:', error);
     throw error;
   }
 }
@@ -82,8 +90,10 @@ export async function getUserSkills(id: number): Promise<Skill[]> {
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
     }
-    const UserSkills: Skill[] = await response.json();
-    return UserSkills;
+    const skills: Skill[] = await response.json();
+    console.log('=== SKILLS RESPONSE ===');
+    console.log(JSON.stringify(skills, null, 2));
+    return skills;
   } catch (error) {
     console.error('Error fetching user skills:', error);
     throw error;
@@ -109,6 +119,8 @@ export async function getUserProjects(id: number): Promise<ProjectUser[]> {
       throw new Error(`API error: ${response.status}`);
     }
     const projects: ProjectUser[] = await response.json();
+    console.log('=== PROJECTS RESPONSE ===');
+    console.log(JSON.stringify(projects, null, 2));
     return projects;
   } catch (error) {
     console.error('Error fetching user projects:', error);
