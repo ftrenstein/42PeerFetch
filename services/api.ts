@@ -1,6 +1,46 @@
 import * as SecureStore from 'expo-secure-store';
 import { User, Skill, ProjectUser, APIUser, mapAPIUserToUser } from './types/users';
+export type { User, Skill, ProjectUser };
 
+/**
+ * DATA FLOW
+ *
+ * 1. searchUserByLogin(login)
+ *    GET /v2/users?filter[login]=xxx
+ *    Returns a LIGHT user — cursus_users is present but skills[] is EMPTY.
+ *    Used only to get the user's numeric id.
+ *
+ * 2. getUserById(id)
+ *    GET /v2/users/:id
+ *    Returns the FULL user — cursus_users[].skills is populated.
+ *    This is the source of truth for level, cursus name, and skills.
+ *
+ * 3. getUserSkills(fullUser)
+ *    No API call. Extracts skills from the cursus_users array
+ *    already fetched in step 2. Picks the cursus with the most skills
+ *    (usually "42cursus", not "Piscine").
+ *
+ * 4. getUserProjects(id)  [currently disabled]
+ *    GET /v2/users/:id/projects_users
+ *    Separate endpoint — projects are not included in step 2.
+ */
+
+// Returns the currently authenticated user (OAuth token owner).
+export async function getMe(): Promise<User | null> {
+  try {
+    const token = await SecureStore.getItemAsync('access_token');
+    if (!token) return null;
+    const response = await fetch('https://api.intra.42.fr/v2/me', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+    const apiUser: APIUser = await response.json();
+    return mapAPIUserToUser(apiUser);
+  } catch (error) {
+    console.error('Error fetching current user:', error);
+    return null;
+  }
+}
 
 export async function searchUserByLogin(login: string): Promise<User | null> {
   console.log('🚀 SEARCH STARTED FOR:', login);
@@ -72,32 +112,15 @@ export async function getUserById(id: number): Promise<User | null> {
   }
 }
 
-export async function getUserSkills(id: number): Promise<Skill[]> {
-  try {
-    const token = await SecureStore.getItemAsync('access_token');
-    if (!token) {
-      throw new Error('Access token not found');
-    }
-
-    const response = await fetch(
-      `https://api.intra.42.fr/v2/users/${id}/skills`,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      }
-    );
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
-    const skills: Skill[] = await response.json();
-    console.log('=== SKILLS RESPONSE ===');
-    console.log(JSON.stringify(skills, null, 2));
-    return skills;
-  } catch (error) {
-    console.error('Error fetching user skills:', error);
-    throw error;
-  }
+// Skills live inside cursus_users (already in the getUserById response).
+// We pick the cursus with the most skills — that's "42cursus", not "Piscine".
+export function getUserSkills(user: User): Skill[] {
+  const cursusArray = user.cursus_users || [];
+  const richest = cursusArray.reduce(
+    (best, cur) => (cur.skills.length > best.skills.length ? cur : best),
+    cursusArray[0]
+  );
+  return richest?.skills ?? [];
 }
 
 export async function getUserProjects(id: number): Promise<ProjectUser[]> {

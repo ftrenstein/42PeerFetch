@@ -1,14 +1,4 @@
 // API Response types from 42 intra
-export interface CursusUser {
-  id: number;
-  level: number;
-  grade: string | null;
-  cursus: {
-    id: number;
-    name: string;
-    slug: string;
-  };
-}
 
 export interface APIUser {
   id: number;
@@ -27,23 +17,38 @@ export interface APIUser {
   cursus_users: CursusUser[];
 }
 
-// App domain types
-export interface User {
+export interface Skill {
   id: number;
-  login: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  displayname: string;
-  image: {
-    link: string;
-  };
-  phone: string | null;
-  wallet: number;
-  correction_point: number;
-  location: string | null;
+  name: string;
   level: number;
-  cursus: string;
+  percentage: number;
+}
+
+export interface Project {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+export interface CursusUser {
+  id: number;
+  begin_at: string;
+  end_at: string | null;
+  grade: string | null;
+  level: number;
+  skills: Skill[];
+  cursus_id: number;
+  cursus: {
+    id: number;
+    created_at: string;
+    name: string;
+    slug: string;
+    kind: string;
+  };
+  has_coalition: boolean;
+  updated_at: string | null;
+  blackholed_at: string | null;
+  created_at: string;
 }
 
 export interface Skill {
@@ -61,21 +66,35 @@ export interface Project {
 
 export interface ProjectUser {
   id: number;
-  status: 'finished' | 'failed' | 'in_progress';
+  occurrence: number;
   final_mark: number | null;
-  marked: boolean;
+  status: "waiting_for_correction" | "finished" | "in_progress";
+  validated?: boolean | null;
+  current_team_id: number;
   project: Project;
-  created_at: string;
+  cursus_ids: number[];
+  marked_at: string | null;
+  marked: boolean;
 }
 
-// Transform API response to app model
+export interface User extends APIUser {
+  level: number;
+  cursus: string;
+  mobile?: string;
+}
+
+// Transform API response to app model.
+// Picks the cursus with the highest level (= "42cursus", not "Piscine").
 export function mapAPIUserToUser(apiUser: APIUser): User {
   const cursusArray = apiUser.cursus_users || [];
-  const lastCursus = cursusArray[cursusArray.length - 1]; // Последний курс
+  const mainCursus = cursusArray.reduce(
+    (best, cur) => (cur.level > best.level ? cur : best),
+    cursusArray[0]
+  );
 
   return {
     ...apiUser,
-    level: lastCursus?.level || 0,
-    cursus: lastCursus?.cursus?.name || 'Unknown',
+    level: mainCursus?.level || 0,
+    cursus: mainCursus?.cursus?.name || 'Unknown',
   };
 }

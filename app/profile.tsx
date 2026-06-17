@@ -1,7 +1,8 @@
 import { View, Text, StyleSheet, TextInput, Button, Image, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import { searchUserByLogin, getUserById, getUserSkills, getUserProjects, type User, type Skill, type ProjectUser } from '../services/api';
+import { getMe, searchUserByLogin, getUserById, getUserSkills, getUserProjects, type User, type Skill, type ProjectUser } from '../services/api';
+import { RadarChart } from 'react-native-gifted-charts/dist/RadarChart';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -12,6 +13,19 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [projectFilter, setProjectFilter] = useState<'all' | 'finished' | 'failed'>('all');
+
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      setLoading(true);
+      const me = await getMe();
+      if (me) {
+        setUser(me);
+        setSkills(getUserSkills(me));
+      }
+      setLoading(false);
+    };
+    loadCurrentUser();
+  }, []);
 
   const handleSearch = async () => {
     if (!login.trim()) {
@@ -33,12 +47,14 @@ export default function ProfileScreen() {
         return;
       }
 
-      // Fetch sequentially to avoid 429 rate limit errors
+
       const fullUser = await getUserById(foundUser.id);
       setUser(fullUser);
 
-      // const userSkills = await getUserSkills(foundUser.id);
-      // setSkills(userSkills);
+      if (fullUser) {
+        setSkills(getUserSkills(fullUser));
+        console.log('Full user data 2:', skills);
+      }
 
       // const userProjects = await getUserProjects(foundUser.id);
       // setProjects(userProjects);
@@ -132,23 +148,16 @@ export default function ProfileScreen() {
           {skills.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Skills</Text>
-              {skills.map((skill) => (
-                <View key={skill.id} style={styles.skillItem}>
-                  <View style={styles.skillHeader}>
-                    <Text style={styles.skillName}>{skill.name}</Text>
-                    <Text style={styles.skillLevel}>Lvl: {skill.level}</Text>
-                  </View>
-                  <View style={styles.progressBarContainer}>
-                    <View
-                      style={[
-                        styles.progressBar,
-                        { width: `${skill.percentage}%` },
-                      ]}
-                    />
-                  </View>
-                  <Text style={styles.percentage}>{skill.percentage}%</Text>
-                </View>
-              ))}
+              <RadarChart
+                data={skills.slice(0, 15).map(s => s.level)}
+                labels={skills.slice(0, 15).map(s =>
+                  s.name.length > 11 ? s.name.slice(0, 10) + '…' : s.name
+                )}
+                labelsPositionOffset={1}
+                gridConfig={{ stroke: '#ddd', strokeWidth: 1 }}
+                polygonConfig={{ fill: '#007AFF', opacity: 0.25, stroke: '#007AFF', strokeWidth: 2 }}
+                labelConfig={{ fontSize: 10, stroke: '#333' }}
+              />
             </View>
           )}
 
