@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, TextInput, Button, Image, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import { getMe, searchUserByLogin, getUserById, getUserSkills, getUserProjects, type User, type Skill, type ProjectUser } from '../services/api';
+import { getMe, searchUserByLogin, getUserById, getUserSkills, getUserProjects, type User, type Skill, type Projects } from '../services/api';
 import { RadarChart } from 'react-native-gifted-charts/dist/RadarChart';
 
 export default function ProfileScreen() {
@@ -9,7 +9,7 @@ export default function ProfileScreen() {
   const [login, setLogin] = useState('');
   const [user, setUser] = useState<User | null>(null);
   const [skills, setSkills] = useState<Skill[]>([]);
-  const [projects, setProjects] = useState<ProjectUser[]>([]);
+  const [projects, setProjects] = useState<Projects[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [projectFilter, setProjectFilter] = useState<'all' | 'finished' | 'failed'>('all');
@@ -56,8 +56,8 @@ export default function ProfileScreen() {
         console.log('Full user data 2:', skills);
       }
 
-      // const userProjects = await getUserProjects(foundUser.id);
-      // setProjects(userProjects);
+      const userProjects = await getUserProjects(foundUser.id);
+      setProjects(userProjects);
     } catch (err: any) {
       const errorMsg = err?.message || 'Search error';
       setError(errorMsg);
@@ -151,17 +151,23 @@ export default function ProfileScreen() {
               <RadarChart
                 data={skills.slice(0, 15).map(s => s.level)}
                 labels={skills.slice(0, 15).map(s =>
-                  s.name.length > 11 ? s.name.slice(0, 10) + '…' : s.name
+                  s.name.length > 10 ? s.name.slice(0, 9) + '…' : s.name
                 )}
-                labelsPositionOffset={1}
+                chartSize={260}
+                chartContainerProps={{ width: 370, height: 370, shiftX: 55, shiftY: 55 }}
+                labelsPositionOffset={2}
                 gridConfig={{ stroke: '#ddd', strokeWidth: 1 }}
                 polygonConfig={{ fill: '#007AFF', opacity: 0.25, stroke: '#007AFF', strokeWidth: 2 }}
                 labelConfig={{ fontSize: 10, stroke: '#333' }}
+                dataLabels={skills.slice(0, 15).map(s => s.level.toFixed(2))}
+                dataLabelsConfig={{ stroke: '#0450a2' }}
+                dataLabelsPositionOffset={0}
+                hideAsterLines
               />
             </View>
           )}
 
-          {/* Projects
+          {/* Projects */}
           {projects.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Projects</Text>
@@ -199,7 +205,7 @@ export default function ProfileScreen() {
                             : styles.statusFailed,
                         ]}
                       >
-                        {project.status === 'finished' ? '✓ Finished' : '✗ Failed'}
+                        {/* {project.status === 'finished' ? '✓ Finished' : '✗ Failed'} */}
                       </Text>
                       {project.final_mark !== null && (
                         <Text style={styles.projectMark}>Mark: {project.final_mark}</Text>
@@ -208,17 +214,17 @@ export default function ProfileScreen() {
                   </View>
                 ))
               ) : (
-                <Text style={styles.emptyText}>No projects in this category</Text>
+                <Text style={styles.emptyText}>No projects in this category</Text> 
               )}
             </View>
-          )} */}
+          )} 
 
           {/* Back Button */}
-          <View style={styles.backButtonContainer}>
+          {/* <View style={styles.backButtonContainer}>
             <Button title="← Back to Search" onPress={() => clearSearch()} />
             <Button title="Logout" onPress={() => router.back()} />
 
-          </View>
+          </View> */}
         </>
       )}
     </ScrollView>

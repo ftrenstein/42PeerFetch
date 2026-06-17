@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
-import { User, Skill, ProjectUser, APIUser, mapAPIUserToUser } from './types/users';
-export type { User, Skill, ProjectUser };
+import { User, Skill, Projects, APIUser, mapAPIUserToUser } from './types/users';
+export type { User, Skill, Projects };
 
 /**
  * DATA FLOW
@@ -123,7 +123,7 @@ export function getUserSkills(user: User): Skill[] {
   return richest?.skills ?? [];
 }
 
-export async function getUserProjects(id: number): Promise<ProjectUser[]> {
+export async function getUserProjects(id: number): Promise<Projects[]> {
   try {
     const token = await SecureStore.getItemAsync('access_token');
     if (!token) {
@@ -141,7 +141,7 @@ export async function getUserProjects(id: number): Promise<ProjectUser[]> {
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
     }
-    const projects: ProjectUser[] = await response.json();
+    const projects: Projects[] = await response.json();
     console.log('=== PROJECTS RESPONSE ===');
     console.log(JSON.stringify(projects, null, 2));
     return projects;

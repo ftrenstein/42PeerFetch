@@ -17,7 +17,7 @@ export default function CallbackScreen() {
 
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <Text>Обработка авторизации...</Text>
+      <Text>Autorisation</Text>
     </View>
   );
 }

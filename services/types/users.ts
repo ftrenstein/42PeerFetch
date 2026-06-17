@@ -64,7 +64,7 @@ export interface Project {
   slug: string;
 }
 
-export interface ProjectUser {
+export interface Projects {
   id: number;
   occurrence: number;
   final_mark: number | null;
