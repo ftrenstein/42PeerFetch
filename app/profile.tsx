@@ -15,7 +15,7 @@ export default function ProfileScreen() {
 
   const handleSearch = async () => {
     if (!login.trim()) {
-      setError('Введи логин');
+      setError('Enter login');
       return;
     }
 
@@ -28,7 +28,7 @@ export default function ProfileScreen() {
     try {
       const foundUser = await searchUserByLogin(login.trim().toLowerCase());
       if (!foundUser) {
-        setError('Пользователь не найден');
+        setError('User not found');
         setLoading(false);
         return;
       }
@@ -43,7 +43,7 @@ export default function ProfileScreen() {
       // const userProjects = await getUserProjects(foundUser.id);
       // setProjects(userProjects);
     } catch (err: any) {
-      const errorMsg = err?.message || 'Ошибка при поиске';
+      const errorMsg = err?.message || 'Search error';
       setError(errorMsg);
       console.error('Full error:', err);
     } finally {
@@ -66,17 +66,18 @@ export default function ProfileScreen() {
   });
 
   return (
+    
     <ScrollView style={styles.container}>
       {/* Search Section */}
       <View style={styles.searchSection}>
         <TextInput
           style={styles.input}
-          placeholder="Введи логин пользователя"
+          placeholder="Enter user login"
           value={login}
           onChangeText={setLogin}
           editable={!loading}
         />
-        <Button title="Поиск" onPress={handleSearch} disabled={loading} />
+        <Button title="Search" onPress={handleSearch} disabled={loading} />
       </View>
 
       {loading && <ActivityIndicator size="large" color="#0000ff" style={styles.loader} />}
@@ -85,57 +86,52 @@ export default function ProfileScreen() {
 
       {user && (
         <>
-          {/* Profile Header */}
-          <View style={styles.header}>
-            {user.image?.link && <Image source={{ uri: user.image.link }} style={styles.avatar} />}
-            <Text style={styles.username}>{user.login}</Text>
-            <Text style={styles.name}>{user.first_name} {user.last_name}</Text>
-            <View style={styles.levelBadge}>
-              <Text style={styles.levelText}>Level: {user.level.toFixed(2)}</Text>
+          {/* Profile Card */}
+          <View style={styles.profileCard}>
+            <View style={styles.profileLeft}>
+              {user.image?.link && <Image source={{ uri: user.image.link }} style={styles.avatar} />}
+              <Text style={styles.username}>{user.login}</Text>
+              <Text style={styles.name}>{user.first_name} {user.last_name}</Text>
+              <View style={styles.levelBadge}>
+                <Text style={styles.levelText}>Lvl {user.level.toFixed(2)}</Text>
+              </View>
+              {user.cursus && <Text style={styles.cursus}>{user.cursus}</Text>}
             </View>
-            {user.cursus && <Text style={styles.cursus}>{user.cursus}</Text>}
+
+            <View style={styles.profileRight}>
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>Email</Text>
+                <Text style={styles.value}>{user.email}</Text>
+              </View>
+              {user.phone && user.phone !== 'hidden' && (
+                <View style={styles.infoRow}>
+                  <Text style={styles.label}>Phone</Text>
+                  <Text style={styles.value}>{user.phone}</Text>
+                </View>
+              )}
+              {user.mobile && (
+                <View style={styles.infoRow}>
+                  <Text style={styles.label}>Mobile</Text>
+                  <Text style={styles.value}>{user.mobile}</Text>
+                </View>
+              )}
+              <View style={styles.infoRow}>
+                <Text style={styles.label}>Wallet</Text>
+                <Text style={styles.value}>{user.wallet} pts</Text>
+              </View>
+              {user.location && (
+                <View style={styles.infoRow}>
+                  <Text style={styles.label}>Location</Text>
+                  <Text style={styles.value}>{user.location}</Text>
+                </View>
+              )}
+            </View>
           </View>
 
-          {/* Contact Info */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Контактная информация</Text>
-            <View style={styles.infoRow}>
-              <Text style={styles.label}>Email:</Text>
-              <Text style={styles.value}>{user.email}</Text>
-            </View>
-            {user.phone && user.phone !== 'hidden' && (
-              <View style={styles.infoRow}>
-                <Text style={styles.label}>Phone:</Text>
-                <Text style={styles.value}>{user.phone}</Text>
-              </View>
-            )}
-            {user.mobile && (
-              <View style={styles.infoRow}>
-                <Text style={styles.label}>Mobile:</Text>
-                <Text style={styles.value}>{user.mobile}</Text>
-              </View>
-            )}
-          </View>
-
-          {/* Resources */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Ресурсы</Text>
-            <View style={styles.infoRow}>
-              <Text style={styles.label}>Wallet:</Text>
-              <Text style={styles.value}>{user.wallet} points</Text>
-            </View>
-            {user.location && (
-              <View style={styles.infoRow}>
-                <Text style={styles.label}>Локация:</Text>
-                <Text style={styles.value}>{user.location}</Text>
-              </View>
-            )}
-          </View>
-
-          /* Skills */
+          {/* Skills */}
           {skills.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Навыки</Text>
+              <Text style={styles.sectionTitle}>Skills</Text>
               {skills.map((skill) => (
                 <View key={skill.id} style={styles.skillItem}>
                   <View style={styles.skillHeader}>
@@ -159,7 +155,7 @@ export default function ProfileScreen() {
           {/* Projects
           {projects.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Проекты</Text>
+              <Text style={styles.sectionTitle}>Projects</Text>
               <View style={styles.filterButtons}>
                 {(['all', 'finished', 'failed'] as const).map((filter) => (
                   <TouchableOpacity
@@ -176,7 +172,7 @@ export default function ProfileScreen() {
                         projectFilter === filter && styles.filterButtonTextActive,
                       ]}
                     >
-                      {filter === 'all' ? 'Все' : filter === 'finished' ? 'Завершено' : 'Не прошли'}
+                      {filter === 'all' ? 'All' : filter === 'finished' ? 'Finished' : 'Failed'}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -194,7 +190,7 @@ export default function ProfileScreen() {
                             : styles.statusFailed,
                         ]}
                       >
-                        {project.status === 'finished' ? '✓ Завершено' : '✗ Не прошло'}
+                        {project.status === 'finished' ? '✓ Finished' : '✗ Failed'}
                       </Text>
                       {project.final_mark !== null && (
                         <Text style={styles.projectMark}>Mark: {project.final_mark}</Text>
@@ -203,14 +199,14 @@ export default function ProfileScreen() {
                   </View>
                 ))
               ) : (
-                <Text style={styles.emptyText}>Нет проектов в этой категории</Text>
+                <Text style={styles.emptyText}>No projects in this category</Text>
               )}
             </View>
           )} */}
 
           {/* Back Button */}
           <View style={styles.backButtonContainer}>
-            <Button title="← Назад к поиску" onPress={() => clearSearch()} />
+            <Button title="← Back to Search" onPress={() => clearSearch()} />
             <Button title="Logout" onPress={() => router.back()} />
 
           </View>
@@ -246,26 +242,40 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 16,
   },
-  header: {
-    alignItems: 'center',
-    padding: 20,
+  profileCard: {
+    flexDirection: 'row',
+    padding: 16,
     backgroundColor: '#f5f5f5',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    gap: 16,
+  },
+  profileLeft: {
+    alignItems: 'center',
+    width: 110,
+  },
+  profileRight: {
+    flex: 1,
+    justifyContent: 'center',
+    gap: 6,
   },
   avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    marginBottom: 16,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: 8,
   },
   username: {
-    fontSize: 24,
+    fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 4,
+    textAlign: 'center',
+    marginBottom: 2,
   },
   name: {
-    fontSize: 16,
+    fontSize: 12,
     color: '#666',
-    marginBottom: 12,
+    textAlign: 'center',
+    marginBottom: 6,
   },
   levelBadge: {
     backgroundColor: '#007AFF',
@@ -294,22 +304,17 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-    paddingVertical: 6,
+    flexDirection: 'column',
   },
   label: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 11,
+    color: '#999',
     fontWeight: '500',
-    flex: 1,
+    textTransform: 'uppercase',
   },
   value: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#333',
-    flex: 1,
-    textAlign: 'right',
   },
   skillItem: {
     marginBottom: 16,
