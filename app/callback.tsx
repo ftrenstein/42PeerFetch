@@ -8,10 +8,9 @@ export default function CallbackScreen() {
 
   useEffect(() => {
     if (params.code) {
-      console.log('Callback received with code:', params.code);
       setTimeout(() => {
-        router.replace('/profile');
-      }, 1000);
+        router.replace('/(tabs)');
+      }, 500);
     }
   }, [params.code]);
 

@@ -1,8 +1,17 @@
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useEffect } from 'react';
+import { router } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import useAuth from '../hooks/useAuth';
 
 export default function LoginScreen() {
   const { promptAsync, authError, isAuthLoading } = useAuth();
+
+  useEffect(() => {
+    SecureStore.getItemAsync('access_token').then(token => {
+      if (token) router.replace('/(tabs)');
+    });
+  }, []);
 
   return (
     <View style={styles.container}>

@@ -2,6 +2,7 @@ import { makeRedirectUri, useAuthRequest } from 'expo-auth-session';
 import * as SecureStore from 'expo-secure-store';
 import { AUTH_CONFIG } from '../constants/auth';
 import { useEffect, useState } from 'react';
+import { router } from 'expo-router';
 
 const useAuth = () => {
     const [authError, setAuthError] = useState<string | null>(null);
@@ -22,6 +23,7 @@ const useAuth = () => {
         scopes: AUTH_CONFIG.scopes,
         redirectUri: redirectUri,
     };
+    console.log("Redirect URI", redirectUri)
 
     const [request, response, promptAsync] = useAuthRequest(config, discovery);
 
@@ -51,6 +53,7 @@ const useAuth = () => {
             }
 
             await SecureStore.setItemAsync('access_token', tokenData.access_token);
+            router.replace('/(tabs)');
         } catch (error: any) {
             const msg = error?.message?.includes('fetch') || error?.message?.includes('network')
                 ? 'Network error. Check your connection.'

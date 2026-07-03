@@ -1,11 +1,13 @@
 import { View, Text, StyleSheet, TextInput, Image, ScrollView, ActivityIndicator, TouchableOpacity, Button } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getMe, searchUserByLogin, getUserById, getUserSkills, getUserProjects, type User, type Skill, type Projects } from '../services/api';
 import { RadarChart } from 'react-native-gifted-charts/dist/RadarChart';
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [login, setLogin] = useState('');
   const [user, setUser] = useState<User | null>(null);
   const [skills, setSkills] = useState<Skill[]>([]);
@@ -95,7 +97,7 @@ export default function ProfileScreen() {
 
   return (
 
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: insets.top }}>
       {/* Search Section */}
       <View style={styles.searchSection}>
         <TextInput
