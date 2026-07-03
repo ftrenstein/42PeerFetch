@@ -1,13 +1,25 @@
-import { View, Text, StyleSheet, Button } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import useAuth from '../hooks/useAuth';
 
-export default function SearchScreen() {
-  const { promptAsync } = useAuth();
+export default function LoginScreen() {
+  const { promptAsync, authError, isAuthLoading } = useAuth();
 
   return (
     <View style={styles.container}>
-      <Text>Screen 1 - Login </Text>
-      <Button title="Login with 42 API" onPress={() => promptAsync()} />
+      <Text style={styles.title}>42 PeerFetch</Text>
+
+      <TouchableOpacity
+        style={[styles.button, isAuthLoading && styles.buttonDisabled]}
+        onPress={() => promptAsync()}
+        disabled={isAuthLoading}
+      >
+        {isAuthLoading
+          ? <ActivityIndicator color="#fff" />
+          : <Text style={styles.buttonText}>Login with 42</Text>
+        }
+      </TouchableOpacity>
+
+      {authError && <Text style={styles.error}>{authError}</Text>}
     </View>
   );
 }
@@ -17,5 +29,35 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 16,
+    backgroundColor: '#fff',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  button: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 10,
+    minWidth: 200,
+    alignItems: 'center',
+  },
+  buttonDisabled: {
+    backgroundColor: '#a0c4ff',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  error: {
+    color: '#FF3B30',
+    fontSize: 14,
+    textAlign: 'center',
+    paddingHorizontal: 24,
+    marginTop: 8,
   },
 });

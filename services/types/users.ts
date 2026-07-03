@@ -14,6 +14,8 @@ export interface APIUser {
   wallet: number;
   correction_point: number;
   location: string | null;
+  campus: { id: number; name: string; country: string }[];
+  campus_users: { campus_id: number; is_primary: boolean }[];
   cursus_users: CursusUser[];
 }
 

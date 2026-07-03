@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TextInput, Button, Image, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Image, ScrollView, ActivityIndicator, TouchableOpacity, Button } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { getMe, searchUserByLogin, getUserById, getUserSkills, getUserProjects, type User, type Skill, type Projects } from '../services/api';
@@ -17,12 +17,17 @@ export default function ProfileScreen() {
   useEffect(() => {
     const loadCurrentUser = async () => {
       setLoading(true);
-      const me = await getMe();
-      if (me) {
-        setUser(me);
-        setSkills(getUserSkills(me));
+      try {
+        const me = await getMe();
+        if (me) {
+          setUser(me);
+          setSkills(getUserSkills(me));
+        }
+      } catch (err: any) {
+        setError(err?.message || 'Failed to load profile');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     loadCurrentUser();
   }, []);
@@ -39,6 +44,8 @@ export default function ProfileScreen() {
     setSkills([]);
     setProjects([]);
 
+    let resolvedId: number | null = null;
+
     try {
       const foundUser = await searchUserByLogin(login.trim().toLowerCase());
       if (!foundUser) {
@@ -46,28 +53,33 @@ export default function ProfileScreen() {
         setLoading(false);
         return;
       }
-
+      resolvedId = foundUser.id;
 
       const fullUser = await getUserById(foundUser.id);
       setUser(fullUser);
 
       if (fullUser) {
         setSkills(getUserSkills(fullUser));
-        console.log('Full user data 2:', skills);
       }
-
-      const userProjects = await getUserProjects(foundUser.id);
-      setProjects(userProjects);
     } catch (err: any) {
-      const errorMsg = err?.message || 'Search error';
-      setError(errorMsg);
-      console.error('Full error:', err);
+      setError(err?.message || 'Search error');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      if (resolvedId !== null) {
+        const userProjects = await getUserProjects(resolvedId);
+        setProjects(userProjects);
+      }
+    } catch {
+      // Projects failed but user card is already shown — don't replace it with an error
     } finally {
       setLoading(false);
     }
   };
 
-    const clearSearch = () => {
+  const clearSearch = () => {
     setLogin('');
     setUser(null);
     setSkills([]);
@@ -82,7 +94,7 @@ export default function ProfileScreen() {
   });
 
   return (
-    
+
     <ScrollView style={styles.container}>
       {/* Search Section */}
       <View style={styles.searchSection}>
@@ -93,7 +105,13 @@ export default function ProfileScreen() {
           onChangeText={setLogin}
           editable={!loading}
         />
-        <Button title="Search" onPress={handleSearch} disabled={loading} />
+        <TouchableOpacity
+          style={[styles.searchButton, loading && styles.searchButtonDisabled]}
+          onPress={handleSearch}
+          disabled={loading}
+        >
+          <Text style={styles.searchButtonText}>Search</Text>
+        </TouchableOpacity>
       </View>
 
       {loading && <ActivityIndicator size="large" color="#0000ff" style={styles.loader} />}
@@ -108,8 +126,14 @@ export default function ProfileScreen() {
               {user.image?.link && <Image source={{ uri: user.image.link }} style={styles.avatar} />}
               <Text style={styles.username}>{user.login}</Text>
               <Text style={styles.name}>{user.first_name} {user.last_name}</Text>
-              <View style={styles.levelBadge}>
-                <Text style={styles.levelText}>Lvl {user.level.toFixed(2)}</Text>
+              <View style={styles.levelIndicator}>
+                <View style={styles.levelLabelRow}>
+                  <Text style={styles.levelText}>Level {Math.floor(user.level)}</Text>
+                  <Text style={styles.levelNext}>{Math.round((user.level % 1) * 100)}%</Text>
+                </View>
+                <View style={styles.levelBarBg}>
+                  <View style={[styles.levelBarFill, { width: `${(user.level % 1) * 100}%` }]} />
+                </View>
               </View>
               {user.cursus && <Text style={styles.cursus}>{user.cursus}</Text>}
             </View>
@@ -119,10 +143,12 @@ export default function ProfileScreen() {
                 <Text style={styles.label}>Email</Text>
                 <Text style={styles.value}>{user.email}</Text>
               </View>
-              {user.phone && user.phone !== 'hidden' && (
+              {user.phone !== 'hidden' && (
                 <View style={styles.infoRow}>
                   <Text style={styles.label}>Phone</Text>
-                  <Text style={styles.value}>{user.phone}</Text>
+                  <Text style={[styles.value]}>
+                    {user.phone}
+                  </Text>
                 </View>
               )}
               {user.mobile && (
@@ -135,12 +161,16 @@ export default function ProfileScreen() {
                 <Text style={styles.label}>Wallet</Text>
                 <Text style={styles.value}>{user.wallet} pts</Text>
               </View>
-              {user.location && (
-                <View style={styles.infoRow}>
-                  <Text style={styles.label}>Location</Text>
-                  <Text style={styles.value}>{user.location}</Text>
-                </View>
-              )}
+              {(() => {
+                const primaryId = user.campus_users?.find(cu => cu.is_primary)?.campus_id;
+                const campus = user.campus?.find(c => c.id === primaryId) ?? user.campus?.[0];
+                return campus ? (
+                  <View style={styles.infoRow}>
+                    <Text style={styles.label}>Campus</Text>
+                    <Text style={styles.value}>{campus.name}</Text>
+                  </View>
+                ) : null;
+              })()}
             </View>
           </View>
 
@@ -161,7 +191,7 @@ export default function ProfileScreen() {
                 labelConfig={{ fontSize: 10, stroke: '#333' }}
                 dataLabels={skills.slice(0, 15).map(s => s.level.toFixed(2))}
                 dataLabelsConfig={{ stroke: '#0450a2' }}
-                dataLabelsPositionOffset={0}
+                dataLabelsPositionOffset={-0.5}
                 hideAsterLines
               />
             </View>
@@ -214,17 +244,17 @@ export default function ProfileScreen() {
                   </View>
                 ))
               ) : (
-                <Text style={styles.emptyText}>No projects in this category</Text> 
+                <Text style={styles.emptyText}>No projects in this category</Text>
               )}
             </View>
-          )} 
+          )}
 
-          {/* Back Button */}
-          {/* <View style={styles.backButtonContainer}>
-            <Button title="← Back to Search" onPress={() => clearSearch()} />
+
+          <View style={styles.backButtonContainer}>
+            <Button title="← Back to my profile" onPress={() => clearSearch()} />
             <Button title="Logout" onPress={() => router.back()} />
 
-          </View> */}
+          </View>
         </>
       )}
     </ScrollView>
@@ -240,6 +270,20 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#f9f9f9',
     gap: 10,
+  },
+  searchButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  searchButtonDisabled: {
+    backgroundColor: '#a0c4ff',
+  },
+  searchButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
   },
   input: {
     borderWidth: 1,
@@ -298,9 +342,34 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
   },
+  levelIndicator: {
+    width: '100%',
+    marginTop: 6,
+  },
+  levelLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
   levelText: {
-    color: '#fff',
+    fontSize: 12,
     fontWeight: 'bold',
+    color: '#333',
+  },
+  levelNext: {
+    fontSize: 11,
+    color: '#007AFF',
+  },
+  levelBarBg: {
+    height: 6,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  levelBarFill: {
+    height: '100%',
+    backgroundColor: '#007AFF',
+    borderRadius: 3,
   },
   cursus: {
     fontSize: 13,
