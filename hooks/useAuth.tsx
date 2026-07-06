@@ -1,8 +1,8 @@
 import { makeRedirectUri, useAuthRequest } from 'expo-auth-session';
-import * as SecureStore from 'expo-secure-store';
 import { AUTH_CONFIG } from '../constants/auth';
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
+import { saveTokens } from '../services/tokenManager';
 
 const useAuth = () => {
     const [authError, setAuthError] = useState<string | null>(null);
@@ -52,7 +52,7 @@ const useAuth = () => {
                 throw new Error('No access token received');
             }
 
-            await SecureStore.setItemAsync('access_token', tokenData.access_token);
+            await saveTokens(tokenData);
             router.replace('/(tabs)');
         } catch (error: any) {
             const msg = error?.message?.includes('fetch') || error?.message?.includes('network')

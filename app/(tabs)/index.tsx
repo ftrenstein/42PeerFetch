@@ -1,8 +1,8 @@
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { clearTokens } from '../../services/tokenManager';
 import { getMe, getUserSkills, getUserProjects, type User, type Skill, type Projects } from '../../services/api';
 import UserProfileView from '../../components/UserProfileView';
 
@@ -36,7 +36,7 @@ export default function MeScreen() {
   }, []);
 
   const handleLogout = async () => {
-    await SecureStore.deleteItemAsync('access_token');
+    await clearTokens();
     router.replace('/');
   };
 

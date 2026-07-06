@@ -1,5 +1,5 @@
-import * as SecureStore from 'expo-secure-store';
 import { User, Skill, Projects, APIUser, mapAPIUserToUser } from './types/users';
+import { getValidToken } from './tokenManager';
 export type { User, Skill, Projects };
 
 /**
@@ -45,7 +45,7 @@ function networkError(error: unknown): Error {
 // Returns null if not logged in (no token stored). Throws on API/network errors.
 export async function getMe(): Promise<User | null> {
   try {
-    const token = await SecureStore.getItemAsync('access_token');
+    const token = await getValidToken();
     if (!token) return null;
     const response = await fetch('https://api.intra.42.fr/v2/me', {
       headers: { 'Authorization': `Bearer ${token}` },
@@ -60,7 +60,7 @@ export async function getMe(): Promise<User | null> {
 
 export async function searchUserByLogin(login: string): Promise<User | null> {
   try {
-    const token = await SecureStore.getItemAsync('access_token');
+    const token = await getValidToken();
     if (!token) throw new Error('Not logged in.');
 
     const response = await fetch(
@@ -79,7 +79,7 @@ export async function searchUserByLogin(login: string): Promise<User | null> {
 
 export async function getUserById(id: number): Promise<User | null> {
   try {
-    const token = await SecureStore.getItemAsync('access_token');
+    const token = await getValidToken();
     if (!token) throw new Error('Not logged in.');
 
     const response = await fetch(
@@ -109,7 +109,7 @@ export function getUserSkills(user: User): Skill[] {
 
 export async function getUserProjects(id: number): Promise<Projects[]> {
   try {
-    const token = await SecureStore.getItemAsync('access_token');
+    const token = await getValidToken();
     if (!token) throw new Error('Not logged in.');
 
     const response = await fetch(
