@@ -23,7 +23,7 @@ export async function saveTokens(data: RawTokenResponse): Promise<void> {
     SecureStore.setItemAsync(KEYS.refreshToken, data.refresh_token),
     SecureStore.setItemAsync(KEYS.expiresAt, String(expiresAt)),
   ]);
-  console.log(`🔑 Tokens saved — expires at ${new Date(expiresAt * 1000).toISOString()}`);
+  console.log(` Tokens saved — expires at ${new Date(expiresAt * 1000).toISOString()}`);
 }
 
 export async function clearTokens(): Promise<void> {
@@ -37,11 +37,11 @@ export async function clearTokens(): Promise<void> {
 async function refreshAccessToken(): Promise<string | null> {
   const refreshToken = await SecureStore.getItemAsync(KEYS.refreshToken);
   if (!refreshToken) {
-    console.warn('🔄 No refresh token stored — user must log in again');
+    console.warn('No refresh token stored — user must log in again');
     return null;
   }
 
-  console.log('🔄 Access token expired — refreshing...');
+  console.log('Access token expired — refreshing...');
   try {
     const response = await fetch(AUTH_CONFIG.tokenEndpoint, {
       method: 'POST',
@@ -57,16 +57,16 @@ async function refreshAccessToken(): Promise<string | null> {
     const data = await response.json();
 
     if (!response.ok || !data.access_token) {
-      console.error('🔄 Refresh failed:', data.error || response.status);
+      console.error('Refresh failed:', data.error || response.status);
       await clearTokens();
       return null;
     }
 
     await saveTokens(data);
-    console.log('🔄 Token refreshed successfully');
+    console.log('Token refreshed successfully');
     return data.access_token;
   } catch (error) {
-    console.error('🔄 Refresh network error:', error);
+    console.error('Refresh network error:', error);
     await clearTokens();
     return null;
   }
