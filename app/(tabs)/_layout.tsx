@@ -18,7 +18,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'My Profile',
+          title: 'Profile',
           tabBarIcon: ({ color, size }) => (
             <Text style={{ fontSize: size * 0.85 }}>👤</Text>
           ),

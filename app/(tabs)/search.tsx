@@ -1,10 +1,13 @@
 import { View, Text, StyleSheet, ScrollView, TextInput, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useState } from 'react';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { clearTokens } from '../../services/tokenManager';
 import { searchUserByLogin, getUserById, getUserSkills, getUserProjects, type User, type Skill, type Projects } from '../../services/api';
 import UserProfileView from '../../components/UserProfileView';
 
 export default function SearchScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const [login, setLogin] = useState('');
   const [user, setUser] = useState<User | null>(null);
@@ -35,8 +38,16 @@ export default function SearchScreen() {
       const fullUser = await getUserById(foundUser.id);
       setUser(fullUser);
       if (fullUser) setSkills(getUserSkills(fullUser));
+
     } catch (err: any) {
-      setError(err?.message || 'Search error');
+      const msg: string = err?.message || '';
+      const isAuthError = msg.includes('expired') || msg.includes('not logged in') || msg.includes('denied');
+      if (isAuthError) {
+        await clearTokens();
+        router.replace('/');
+        return;
+      }
+      setError(msg || 'Search error');
       setLoading(false);
       return;
     }
@@ -45,7 +56,7 @@ export default function SearchScreen() {
       if (resolvedId !== null) {
         setProjects(await getUserProjects(resolvedId));
       }
-    } catch {}
+    } catch { }
 
     setLoading(false);
   };

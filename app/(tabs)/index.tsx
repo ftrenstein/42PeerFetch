@@ -19,15 +19,26 @@ export default function MeScreen() {
     const load = async () => {
       try {
         const me = await getMe();
-        if (me) {
-          setUser(me);
-          setSkills(getUserSkills(me));
-          try {
-            setProjects(await getUserProjects(me.id));
-          } catch {}
+        if (!me) {
+          // No token or refresh failed — go back to login
+          await clearTokens();
+          router.replace('/');
+          return;
         }
+        setUser(me);
+        setSkills(getUserSkills(me));
+        try {
+          setProjects(await getUserProjects(me.id));
+        } catch { }
       } catch (err: any) {
-        setError(err?.message || 'Failed to load profile');
+        const msg: string = err?.message || '';
+        const isAuthError = msg.includes('expired') || msg.includes('not logged in') || msg.includes('denied');
+        if (isAuthError) {
+          await clearTokens();
+          router.replace('/');
+        } else {
+          setError(msg || 'Failed to load profile');
+        }
       } finally {
         setLoading(false);
       }
