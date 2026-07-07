@@ -23,6 +23,7 @@ export default function ProfileScreen() {
         if (!me) { await logout(); return; }
         setUser(me);
         setSkills(getUserSkills(me));
+        setLoading(false);
         try { setProjects(await getUserProjects(me.id)); } catch { }
       } catch (err: any) {
         const msg: string = err?.message || '';
@@ -31,7 +32,6 @@ export default function ProfileScreen() {
         } else {
           setError(msg || 'Failed to load profile');
         }
-      } finally {
         setLoading(false);
       }
     };
