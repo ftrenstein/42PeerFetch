@@ -1,22 +1,9 @@
-import { useEffect } from 'react';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { View, Text } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
 
 export default function CallbackScreen() {
-  const router = useRouter();
-  const params = useLocalSearchParams();
-
-  useEffect(() => {
-    if (params.code) {
-      setTimeout(() => {
-        router.replace('/profile');
-      }, 500);
-    }
-  }, [params.code]);
-
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <Text>Autorisation</Text>
+      <ActivityIndicator size="large" color="#007AFF" />
     </View>
   );
 }
