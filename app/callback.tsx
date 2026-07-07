@@ -9,7 +9,7 @@ export default function CallbackScreen() {
   useEffect(() => {
     if (params.code) {
       setTimeout(() => {
-        router.replace('/(tabs)');
+        router.replace('/profile');
       }, 500);
     }
   }, [params.code]);
