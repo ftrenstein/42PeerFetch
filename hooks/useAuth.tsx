@@ -1,31 +1,28 @@
 import { makeRedirectUri, useAuthRequest } from 'expo-auth-session';
 import { AUTH_CONFIG } from '../constants/auth';
-import { useEffect, useState } from 'react';
-import { router } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
 import { saveTokens } from '../services/tokenManager';
+import { useAuthState } from '../context/AuthContext';
 
+const DISCOVERY = {
+    authorizationEndpoint: AUTH_CONFIG.authorizationEndpoint,
+    tokenEndpoint: AUTH_CONFIG.tokenEndpoint,
+};
+
+const REDIRECT_URI = makeRedirectUri({ scheme: 'exp', path: 'callback' });
+
+const CONFIG = {
+    clientId: AUTH_CONFIG.clientId,
+    scopes: AUTH_CONFIG.scopes,
+    redirectUri: REDIRECT_URI,
+};
+console.log("redirect URL:", REDIRECT_URI)
 const useAuth = () => {
     const [authError, setAuthError] = useState<string | null>(null);
     const [isAuthLoading, setIsAuthLoading] = useState(false);
+    const { notifyLoggedIn } = useAuthState();
 
-    const discovery = {
-        authorizationEndpoint: AUTH_CONFIG.authorizationEndpoint,
-        tokenEndpoint: AUTH_CONFIG.tokenEndpoint,
-    };
-
-    const redirectUri = makeRedirectUri({
-        scheme: 'exp',
-        path: 'callback'
-    });
-
-    const config = {
-        clientId: AUTH_CONFIG.clientId,
-        scopes: AUTH_CONFIG.scopes,
-        redirectUri: redirectUri,
-    };
-    console.log("Redirect URI", redirectUri)
-
-    const [request, response, promptAsync] = useAuthRequest(config, discovery);
+    const [request, response, promptAsync] = useAuthRequest(CONFIG, DISCOVERY);
 
     const exchangeToken = async (code: string) => {
         setIsAuthLoading(true);
@@ -38,7 +35,7 @@ const useAuth = () => {
                     grant_type: 'authorization_code',
                     code,
                     client_id: AUTH_CONFIG.clientId,
-                    redirect_uri: redirectUri,
+                    redirect_uri: REDIRECT_URI,
                     client_secret: AUTH_CONFIG.clientSecret || '',
                 }).toString(),
             });
@@ -53,13 +50,12 @@ const useAuth = () => {
             }
 
             await saveTokens(tokenData);
-            router.replace('/(tabs)');
+            notifyLoggedIn();
         } catch (error: any) {
             const msg = error?.message?.includes('fetch') || error?.message?.includes('network')
                 ? 'Network error. Check your connection.'
                 : error?.message || 'Authentication failed';
             setAuthError(msg);
-            console.error('Error exchanging token:', error);
         } finally {
             setIsAuthLoading(false);
         }
@@ -67,6 +63,7 @@ const useAuth = () => {
 
     useEffect(() => {
         if (response?.type === 'success') {
+
             const { code } = response.params;
             exchangeToken(code);
         } else if (response?.type === 'error') {
